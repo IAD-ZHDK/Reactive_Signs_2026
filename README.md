@@ -6,6 +6,8 @@ overhead camera tracks people and broadcasts their position; each poster reads
 that position and responds. When the camera is not running, the **mouse** stands
 in for a person, so you can build and test everything in the browser.
 
+![Example poster: a checkerboard tunnel that reacts to the tracked position](docs/tunnel-poster.gif)
+
 ## Repository structure
 
 - **`2026_Exhibition/`** — the exhibition app (this is what runs on location).
