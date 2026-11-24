@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Poster</title>
+    <script>
+      // The poster library goes full-screen when the canvas is clicked (a kiosk
+      // feature). That distorts the 1:3 poster to the screen's shape, so we
+      // disable full-screen requests here.
+      [
+        "requestFullscreen",
+        "webkitRequestFullscreen",
+        "mozRequestFullScreen",
+        "msRequestFullscreen",
+      ].forEach(function (m) {
+        if (Element.prototype[m])
+          Element.prototype[m] = function () {
+            return Promise.resolve();
+          };
+      });
+    </script>
+    <script
+      language="javascript"
+      type="text/javascript"
+      src="../libraries/p5.min.js"
+    ></script>
+    <script
+      language="javascript"
+      type="text/javascript"
+      src="../libraries/p5.posterControl.js"
+    ></script>
+    <script
+      language="javascript"
+      type="text/javascript"
+      src="sketch.js"
+    ></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: black;
+      }
+    </style>
+  </head>
+
+  <body></body>
+</html>

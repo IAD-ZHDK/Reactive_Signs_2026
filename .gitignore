@@ -1,0 +1,18 @@
+# OS / editor
+.DS_Store
+
+# Node
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Model weights (auto-downloaded by ultralytics)
+*.pt
+
+# Large media
+*.mov
+*.mp4

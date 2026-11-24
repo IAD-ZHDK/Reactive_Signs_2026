@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Infinity Room — poster preview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+        font-size: 14px;
+        color: #222;
+        background: #f4f3ef;
+        display: flex;
+        height: 100vh;
+      }
+      #side {
+        width: 310px;
+        padding: 18px;
+        overflow: auto;
+        border-right: 1px solid #ddd;
+        background: #fff;
+      }
+      #view {
+        flex: 1;
+        position: relative;
+        background: #111;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      h1 {
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0 0 14px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #222;
+      }
+      h2 {
+        font-size: 14px;
+        font-weight: 500;
+        margin: 18px 0 8px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #bbb;
+      }
+      button {
+        font: inherit;
+        padding: 6px 10px;
+        border: 1px solid #bbb;
+        background: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        margin: 0 4px 6px 0;
+      }
+      button:hover {
+        background: #f0efea;
+      }
+      select {
+        font: inherit;
+        width: 100%;
+        padding: 4px;
+        margin: 4px 0;
+      }
+      .scr {
+        border: 1px dashed #aaa;
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 8px;
+      }
+      .scr .lbl span {
+        color: #777;
+        font-size: 12px;
+      }
+      .small {
+        color: #777;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      label.row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 6px 0;
+      }
+      input[type="range"] {
+        flex: 1;
+      }
+      /* Bottom-right view switcher (shared look across the three views). */
+      .viewSwitch {
+        position: fixed;
+        bottom: 14px;
+        right: 16px;
+        z-index: 100;
+        display: flex;
+        gap: 6px;
+        font:
+          12px/1 -apple-system,
+          system-ui,
+          sans-serif;
+      }
+      .viewSwitch a {
+        padding: 7px 11px;
+        border-radius: 7px;
+        text-decoration: none;
+        letter-spacing: 0.04em;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(2px);
+      }
+      .viewSwitch a:hover {
+        background: rgba(0, 0, 0, 0.8);
+        border-color: rgba(255, 255, 255, 0.7);
+      }
+      .viewSwitch a.active {
+        background: #fff;
+        color: #111;
+        border-color: #fff;
+        cursor: default;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="side">
+      <h1>Infinity room 5 × 5 × 3 m</h1>
+      <h2>View</h2>
+      <button data-v="person">Person's view</button
+      ><button data-v="up">Looking up</button
+      ><button data-v="entrance">Entrance</button
+      ><button data-v="outside">Outside</button
+      ><button data-v="plan">Top view</button>
+      <h2>Screen content</h2>
+      <div class="scr" data-s="all">
+        <div class="lbl">All four screens</div>
+        <select></select>
+      </div>
+      <div class="scr" data-s="0">
+        <div class="lbl">Screen North <span>opposite entrance</span></div>
+        <select></select>
+      </div>
+      <div class="scr" data-s="1">
+        <div class="lbl">Screen South <span>at entrance</span></div>
+        <select></select>
+      </div>
+      <div class="scr" data-s="2">
+        <div class="lbl">Screen West <span>left</span></div>
+        <select></select>
+      </div>
+      <div class="scr" data-s="3">
+        <div class="lbl">Screen East <span>right</span></div>
+        <select></select>
+      </div>
+      <p class="small">
+        Each screen shows the Template poster or one of the animations. Screen
+        format 1 : 3, e.g. 1080 × 3240 px.
+      </p>
+      <label class="row"
+        ><input type="checkbox" id="fit" checked />Show posters whole instead of
+        cropping</label
+      >
+      <label class="row"
+        >Speed
+        <input
+          type="range"
+          id="sp"
+          min="0"
+          max="200"
+          step="5"
+          value="100"
+        /><span id="spo">100 %</span></label
+      >
+      <h2>Mirror</h2>
+      <label class="row"
+        >Reflections
+        <input type="range" id="nb" min="1" max="80" step="1" value="60" /><span
+          id="nbo"
+          >60</span
+        ></label
+      >
+      <label class="row"
+        >Reflectivity
+        <input
+          type="range"
+          id="rf"
+          min="50"
+          max="99"
+          step="1"
+          value="90"
+        /><span id="rfo">90 %</span></label
+      >
+      <label class="row"
+        ><input type="checkbox" id="fc" checked />Mirror floor and
+        ceiling</label
+      >
+      <label class="row"
+        ><input type="checkbox" id="gs" checked />Everything black &
+        white</label
+      >
+      <h2>Export</h2>
+      <button id="shot">Save image (PNG)</button>
+      <p class="small">
+        Drag = look around, scroll = zoom, right mouse button = pan. Needs the
+        internet to load three.js.
+      </p>
+    </div>
+    <div id="view"></div>
+    <nav class="viewSwitch">
+      <a href="../">Poster</a>
+      <a href="./" class="active">Infinity room</a>
+      <a href="../Tracking/">Room Tracking</a>
+    </nav>
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      const view = document.getElementById("view");
+      const renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        preserveDrawingBuffer: true,
+      });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+      view.appendChild(renderer.domElement);
+      const cam = new THREE.PerspectiveCamera(60, 1, 0.05, 100);
+      const ctl = new OrbitControls(cam, renderer.domElement);
+      ctl.enableDamping = true;
+      const blank = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+      blank.needsUpdate = true;
+      const U = {
+        cp: { value: new THREE.Vector3() },
+        ivp: { value: new THREE.Matrix4() },
+        nb: { value: 60 },
+        fc: { value: 1 },
+        rf: { value: 0.9 },
+        gs: { value: 1 },
+        eye: { value: 0 },
+        tx0: { value: blank },
+        tx1: { value: blank },
+        tx2: { value: blank },
+        tx3: { value: blank },
+        sc: {
+          value: [
+            new THREE.Vector2(1, 1),
+            new THREE.Vector2(1, 1),
+            new THREE.Vector2(1, 1),
+            new THREE.Vector2(1, 1),
+          ],
+        },
+      };
+      const fs = `
+precision highp float;
+uniform vec3 cp;uniform mat4 ivp;uniform float nb,fc,rf,gs,eye;
+uniform sampler2D tx0,tx1,tx2,tx3;uniform vec2 sc[4];
+varying vec2 vUv;
+const float S=2.5,HH=3.0,G=0.5,D=1.75;
+vec3 scr(int i,vec2 uv){
+ vec2 s=sc[0];if(i==1)s=sc[1];if(i==2)s=sc[2];if(i==3)s=sc[3];
+ vec2 q=vec2(uv.x+0.5,uv.y/3.);q=0.5+(q-0.5)*s;
+ if(q.x<0.||q.x>1.||q.y<0.||q.y>1.)return vec3(0.);
+ vec4 c=i==0?texture2D(tx0,q):i==1?texture2D(tx1,q):i==2?texture2D(tx2,q):texture2D(tx3,q);
+ return c.rgb;
+}
+float capI(vec3 ro,vec3 rd,vec3 pa,vec3 pb,float r){
+ vec3 ba=pb-pa,oa=ro-pa;
+ float baba=dot(ba,ba),bard=dot(ba,rd),baoa=dot(ba,oa),rdoa=dot(rd,oa),oaoa=dot(oa,oa);
+ float a=baba-bard*bard,b=baba*rdoa-baoa*bard,c=baba*oaoa-baoa*baoa-r*r*baba;
+ float h=b*b-a*c;
+ if(h>=0.){float tt=(-b-sqrt(h))/a;float y=baoa+tt*bard;
+  if(y>0.&&y<baba)return tt;
+  vec3 oc=(y<=0.)?oa:ro-pb;b=dot(rd,oc);c=dot(oc,oc)-r*r;h=b*b-c;
+  if(h>0.)return -b-sqrt(h);}
+ return -1.;
+}
+vec3 capN(vec3 p,vec3 a,vec3 b,float r){vec3 ba=b-a,pa=p-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);return (pa-h*ba)/r;}
+float sphI(vec3 ro,vec3 rd,vec3 c,float r){vec3 oc=ro-c;float b=dot(oc,rd);float h=b*b-dot(oc,oc)+r*r;if(h<0.)return -1.;return -b-sqrt(h);}
+void main(){
+ vec4 w=ivp*vec4(vUv*2.-1.,1.,1.);
+ vec3 ro=cp,rd=normalize(w.xyz/w.w-cp);
+ vec3 col=vec3(0.),thr=vec3(1.);
+ vec3 tint=vec3(0.97,1.,0.99)*rf;
+ for(int b=0;b<81;b++){
+  if(float(b)>nb){col+=thr*0.015;break;}
+  float tm=1e9;int id=0;vec3 n=vec3(0.);vec2 suv=vec2(0.);int si=0;
+  for(int k=0;k<4;k++){
+   float sg=(k<2)?1.:-1.;bool ax=(k==0||k==2);
+   float rda=ax?rd.x:rd.z,roa=ax?ro.x:ro.z;
+   if(abs(rda)>1e-6){float tt=(sg*S-roa)/rda;
+    if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;float o=ax?p.z:p.x;
+     if(abs(o)<=S&&p.y>=0.&&p.y<=HH&&abs(o)>G){tm=tt;id=(sg*roa<S)?1:2;n=ax?vec3(1.,0.,0.):vec3(0.,0.,1.);}}}
+  }
+  if(rd.y<0.){float tt=-ro.y/rd.y;if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;tm=tt;n=vec3(0.,1.,0.);id=(abs(p.x)<S&&abs(p.z)<S)?(fc>0.5?1:7):3;}}
+  if(rd.y>0.&&ro.y<HH){float tt=(HH-ro.y)/rd.y;if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;if(abs(p.x)<S&&abs(p.z)<S){tm=tt;n=vec3(0.,1.,0.);id=fc>0.5?1:8;}}}
+  for(int k=0;k<4;k++){
+   bool ax=(k>=2);float sg=(k==0||k==2)?-1.:1.;
+   float rda=ax?rd.x:rd.z,roa=ax?ro.x:ro.z;
+   if(abs(rda)>1e-6){float tt=(sg*D-roa)/rda;
+    if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;float o=ax?p.z:p.x;
+     if(abs(o)<0.5&&p.y>=0.&&p.y<=HH){tm=tt;id=(sg*roa<D)?4:5;
+      float lat=ax?(sg*o):(-sg*o);suv=vec2(lat,p.y);si=k;}}}
+  }
+  vec3 pa=vec3(0.,0.2,0.),pb=vec3(0.,1.25,0.);
+  bool skp=(b==0&&eye>0.5);
+  float tc=capI(ro,rd,pa,pb,0.2);if(!skp&&tc>1e-4&&tc<tm){tm=tc;id=6;n=capN(ro+rd*tc,pa,pb,0.2);}
+  vec3 hc=vec3(0.,1.62,0.);float th=sphI(ro,rd,hc,0.12);if(!skp&&th>1e-4&&th<tm){tm=th;id=9;n=(ro+rd*th-hc)/0.12;}
+  vec3 p=ro+rd*tm;
+  if(id==0){col+=thr*mix(vec3(0.75),vec3(0.86,0.88,0.92),clamp(rd.y*0.5+0.5,0.,1.));break;}
+  if(id==1){rd=reflect(rd,n);ro=p+rd*1e-3;thr*=tint;continue;}
+  if(id==2){col+=thr*vec3(0.92)*(0.7+0.3*abs(n.x));break;}
+  if(id==3){float ch=mod(floor(p.x)+floor(p.z),2.);col+=thr*vec3(0.5+0.04*ch);break;}
+  if(id==4){col+=thr*scr(si,suv);break;}
+  if(id==5){col+=thr*vec3(0.025);break;}
+  if(id==7){col+=thr*vec3(0.18);break;}
+  if(id==8){col+=thr*vec3(0.12);break;}
+  vec3 base=id==9?vec3(0.8,0.62,0.5):vec3(0.55,0.25,0.15);
+  float l=0.3+0.42*max(dot(n,normalize(vec3(0.4,0.8,0.3))),0.)+0.25*max(dot(n,normalize(-p*vec3(1.,0.,1.)+vec3(0.,0.2,0.))),0.);
+  col+=thr*base*l;break;
+ }
+ if(gs>0.5)col=vec3(dot(col,vec3(0.299,0.587,0.114)));
+ gl_FragColor=vec4(pow(col,vec3(1./2.2)),1.);
+}`;
+      const vs = `varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`;
+      const scene = new THREE.Scene();
+      scene.add(
+        new THREE.Mesh(
+          new THREE.PlaneGeometry(2, 2),
+          new THREE.ShaderMaterial({
+            uniforms: U,
+            vertexShader: vs,
+            fragmentShader: fs,
+            depthTest: false,
+          }),
+        ),
+      );
+      const oc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+      // ---- noise helpers (for the procedural animations) ----
+      const PR = new Uint8Array(512);
+      {
+        const a = [...Array(256).keys()];
+        let s = 7;
+        for (let i = 255; i > 0; i--) {
+          s = (s * 16807) % 2147483647;
+          const j = s % (i + 1);
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        for (let i = 0; i < 512; i++) PR[i] = a[i & 255];
+      }
+      const hs = (i, j, k) => PR[(PR[(PR[i & 255] + j) & 255] + k) & 255] / 255;
+      const sm = (v) => v * v * (3 - 2 * v),
+        lp = (a, b, v) => a + (b - a) * v;
+      function vn(x, y, z) {
+        const X = Math.floor(x),
+          Y = Math.floor(y),
+          Z = Math.floor(z),
+          u = sm(x - X),
+          v = sm(y - Y),
+          w = sm(z - Z);
+        return lp(
+          lp(
+            lp(hs(X, Y, Z), hs(X + 1, Y, Z), u),
+            lp(hs(X, Y + 1, Z), hs(X + 1, Y + 1, Z), u),
+            v,
+          ),
+          lp(
+            lp(hs(X, Y, Z + 1), hs(X + 1, Y, Z + 1), u),
+            lp(hs(X, Y + 1, Z + 1), hs(X + 1, Y + 1, Z + 1), u),
+            v,
+          ),
+          w,
+        );
+      }
+      const fbm = (x, y, z) =>
+        0.55 * vn(x, y, z) +
+        0.3 * vn(2 * x + 5, 2 * y, z * 1.3) +
+        0.15 * vn(4 * x, 4 * y + 3, z * 1.7);
+
+      const CW = 360,
+        CH = 1080;
+
+      // ---- the example poster (Template tunnel), ported to a 2D canvas ----
+      // Layer canvases for the mask compositing, created once.
+      let PF, PS, PM, PC;
+      function posterInit() {
+        const mk = () => {
+          const c = document.createElement("canvas");
+          c.width = CW;
+          c.height = CH;
+          return c.getContext("2d");
+        };
+        PF = mk();
+        PS = mk();
+        PM = mk();
+        PC = mk();
+      }
+      function quad(ctx, ax, ay, bx, by, cx, cy, dx, dy) {
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(cx, cy);
+        ctx.lineTo(dx, dy);
+        ctx.closePath();
+      }
+
+      const ANIM = {
+        poster(x, t) {
+          if (!PF) posterInit();
+          const W = CW,
+            H = CH,
+            depth = 32,
+            cols = 18;
+          const glyphZ = (t * 12) % depth; // growth cycle of the reveal rectangle
+          const scroll = t * 0.18; // checker scroll
+          const cx = W / 2,
+            cy = H / 2; // idle: tunnel centred (no pointer in the room)
+          PF.clearRect(0, 0, W, H);
+          PS.clearRect(0, 0, W, H);
+          PM.clearRect(0, 0, W, H);
+          PC.clearRect(0, 0, W, H);
+          PS.strokeStyle = "#fff";
+          PS.lineWidth = 1.2;
+          PS.beginPath();
+          for (let d = 0; d < depth; d++) {
+            const td1 = sm(d / depth),
+              td2 = sm((d + 1) / depth);
+            const L1 = lp(0, cx, td1),
+              R1 = lp(W, cx, td1),
+              T1 = lp(0, cy, td1),
+              B1 = lp(H, cy, td1);
+            const L2 = lp(0, cx, td2),
+              R2 = lp(W, cx, td2),
+              T2 = lp(0, cy, td2),
+              B2 = lp(H, cy, td2);
+            for (let j = 0; j < cols; j++) {
+              const a = j / cols,
+                b = (j + 1) / cols;
+              const x1A = lp(L1, R1, a),
+                x1B = lp(L1, R1, b),
+                x2A = lp(L2, R2, a),
+                x2B = lp(L2, R2, b);
+              const checker =
+                ((Math.floor((d + scroll) * 0.5 + j) % 2) + 2) % 2;
+              PF.fillStyle = checker < 1 ? "#000" : "#fff";
+              PF.beginPath();
+              quad(PF, x1A, T1, x1B, T1, x2B, T2, x2A, T2);
+              quad(PF, x1A, B1, x1B, B1, x2B, B2, x2A, B2);
+              quad(
+                PF,
+                L1,
+                lp(T1, B1, a),
+                L1,
+                lp(T1, B1, b),
+                L2,
+                lp(T2, B2, b),
+                L2,
+                lp(T2, B2, a),
+              );
+              quad(
+                PF,
+                R1,
+                lp(T1, B1, a),
+                R1,
+                lp(T1, B1, b),
+                R2,
+                lp(T2, B2, b),
+                R2,
+                lp(T2, B2, a),
+              );
+              PF.fill();
+              quad(PS, x1A, T1, x1B, T1, x2B, T2, x2A, T2);
+              quad(PS, x1A, B1, x1B, B1, x2B, B2, x2A, B2);
+              quad(
+                PS,
+                L1,
+                lp(T1, B1, a),
+                L1,
+                lp(T1, B1, b),
+                L2,
+                lp(T2, B2, b),
+                L2,
+                lp(T2, B2, a),
+              );
+              quad(
+                PS,
+                R1,
+                lp(T1, B1, a),
+                R1,
+                lp(T1, B1, b),
+                R2,
+                lp(T2, B2, b),
+                R2,
+                lp(T2, B2, a),
+              );
+            }
+          }
+          PS.stroke();
+          const sg = 0.05 + (glyphZ / depth) * 1.55; // plain rectangle growing from the centre
+          PM.fillStyle = "#fff";
+          PM.fillRect(cx - (W * sg) / 2, cy - (H * sg) / 2, W * sg, H * sg);
+          PC.globalCompositeOperation = "source-over";
+          PC.drawImage(PF.canvas, 0, 0);
+          PC.globalCompositeOperation = "destination-in";
+          PC.drawImage(PM.canvas, 0, 0);
+          PC.globalCompositeOperation = "destination-over";
+          PC.drawImage(PS.canvas, 0, 0);
+          PC.globalCompositeOperation = "source-over";
+          x.fillStyle = "#000";
+          x.fillRect(0, 0, W, H);
+          x.drawImage(PC.canvas, 0, 0);
+        },
+        tunnel(x, t) {
+          x.fillStyle = "#fff";
+          x.fillRect(0, 0, CW, CH);
+          const cx = CW / 2 + 55 * Math.sin(t * 0.31),
+            cy = CH * 0.47 + 140 * Math.sin(t * 0.23);
+          x.strokeStyle = "#000";
+          x.lineWidth = 0.7;
+          const f = (t * 0.5) % 1;
+          for (let k = 0; k < 16; k++) {
+            const s = Math.pow(0.8, k + f);
+            x.strokeRect(cx - cx * s, cy - cy * s, CW * s, CH * s);
+          }
+          x.beginPath();
+          for (let i = 0; i <= 12; i++) {
+            const a = i / 12;
+            x.moveTo(a * CW, 0);
+            x.lineTo(cx, cy);
+            x.moveTo(a * CW, CH);
+            x.lineTo(cx, cy);
+          }
+          for (let i = 0; i <= 30; i++) {
+            const a = i / 30;
+            x.moveTo(0, a * CH);
+            x.lineTo(cx, cy);
+            x.moveTo(CW, a * CH);
+            x.lineTo(cx, cy);
+          }
+          x.stroke();
+          x.save();
+          x.beginPath();
+          x.rect(24, 170, CW - 90, CH - 340);
+          x.clip();
+          const N = 22,
+            rot = t * 0.12,
+            ph = (t * 1.1) % 2;
+          x.fillStyle = "#000";
+          for (let k = -2; k < 26; k++) {
+            const r1 = 3 * Math.pow(1.24, k + ph),
+              r2 = 3 * Math.pow(1.24, k + 1 + ph);
+            for (let j = 0; j < N; j++) {
+              if ((j + k) % 2) continue;
+              const a0 =
+                  rot +
+                  (j * 2 * Math.PI) / N +
+                  0.15 * Math.sin(t * 0.7 + k * 0.3),
+                a1 = a0 + (2 * Math.PI) / N;
+              x.beginPath();
+              x.arc(cx, cy, r2, a0, a1);
+              x.arc(cx, cy, r1, a1, a0, true);
+              x.closePath();
+              x.fill();
+            }
+          }
+          x.restore();
+          x.fillStyle = "#000";
+          x.fillRect(CW - 62, 40, 52, 24);
+          x.font = "bold 9px monospace";
+          x.fillText("INTERACTION", CW - 62, 80);
+          x.fillText("DESIGN ZHDK", CW - 62, 91);
+          x.font = "9px monospace";
+          for (let r = 0; r < 44; r++) {
+            let s = "";
+            const o = Math.floor(t * 6);
+            for (let b = 0; b < 8; b++) s += hs(r + o, b, 3) > 0.5 ? "1" : "0";
+            if (hs(r + o, 9, 1) > 0.25) x.fillText(s, CW - 58, 330 + r * 11);
+          }
+          x.globalAlpha = 0.4;
+          x.font = "22px Georgia,serif";
+          const words =
+            "the Museum für Gestaltung Zürich explores design in all its diversity presenting outstanding works to the public while addressing digital transformation and fostering exchange".split(
+              " ",
+            );
+          const off = (t * 14) % 30;
+          for (let r = 0; r < 38; r++) {
+            let line = "",
+              i = (r * 5 + Math.floor((t * 14) / 30) * 5) % words.length;
+            while (line.length < 34) {
+              line += words[i % words.length] + " ";
+              i++;
+            }
+            x.fillText(line, -20 + (r % 3) * -14, r * 30 - off + 20);
+          }
+          x.globalAlpha = 1;
+        },
+        cube(x, t) {
+          x.fillStyle = "#fff";
+          x.fillRect(0, 0, CW, CH);
+          const ramp = ".-:+x*X&$@#",
+            cw = 7.6,
+            ch = 13.5,
+            cols = 42,
+            rows = 78;
+          x.font = "11px monospace";
+          for (let r = 0; r < rows; r++) {
+            x.fillStyle = "#999";
+            x.fillText(String(r).padStart(2, " "), 2, 24 + r * ch);
+            x.fillStyle = "#000";
+            let s = "";
+            for (let c = 0; c < cols; c++) {
+              const n =
+                fbm(c * 0.09, r * 0.055 - t * 0.12, t * 0.15) *
+                (0.7 + 0.5 * Math.sin(r * 0.04 + c * 0.05 + t * 0.2));
+              const v = Math.max(0, Math.min(1, (n - 0.45) * 3.2));
+              s += v <= 0 ? "." : ramp[Math.floor(v * (ramp.length - 1))];
+            }
+            x.fillText(s, 22, 24 + r * ch);
+          }
+          x.lineCap = "round";
+          for (let i = 0; i < 7; i++) {
+            x.globalAlpha = 0.22 + 0.15 * (i % 2);
+            x.strokeStyle = "#000";
+            x.lineWidth = 18 + 10 * (i % 3);
+            x.beginPath();
+            const y0 = ((i * 170 + t * 40) % (CH + 300)) - 150;
+            x.moveTo(-20, y0);
+            x.bezierCurveTo(
+              CW * 0.3,
+              y0 - 120 + 60 * Math.sin(t + i),
+              CW * 0.7,
+              y0 + 180 * Math.cos(t * 0.7 + i),
+              CW + 20,
+              y0 + 40,
+            );
+            x.stroke();
+          }
+          x.globalAlpha = 1;
+          const cubes = 14;
+          for (let i = 0; i < cubes; i++) {
+            const sz = 26 + 30 * hs(i, 2, 5),
+              px = 30 + (CW - 60) * hs(i, 1, 1) + 25 * Math.sin(t * 0.4 + i),
+              py =
+                ((((hs(i, 3, 7) * CH - t * (20 + 30 * hs(i, 4, 4))) %
+                  (CH + 120)) +
+                  CH +
+                  120) %
+                  (CH + 120)) -
+                60;
+            const ax = t * (0.3 + hs(i, 6, 1) * 0.6) + i,
+              ay = t * (0.2 + hs(i, 7, 2) * 0.5) + i * 2,
+              dark = i % 3 !== 1;
+            const ca = Math.cos(ax),
+              sa = Math.sin(ax),
+              cb = Math.cos(ay),
+              sb = Math.sin(ay);
+            const R = (v) => {
+              let [X, Y, Z] = v;
+              let y1 = Y * ca - Z * sa,
+                z1 = Y * sa + Z * ca;
+              let x2 = X * cb + z1 * sb,
+                z2 = -X * sb + z1 * cb;
+              return [x2, y1, z2];
+            };
+            const F = [
+              [
+                [1, 0, 0],
+                [
+                  [1, -1, -1],
+                  [1, 1, -1],
+                  [1, 1, 1],
+                  [1, -1, 1],
+                ],
+              ],
+              [
+                [-1, 0, 0],
+                [
+                  [-1, -1, -1],
+                  [-1, -1, 1],
+                  [-1, 1, 1],
+                  [-1, 1, -1],
+                ],
+              ],
+              [
+                [0, 1, 0],
+                [
+                  [-1, 1, -1],
+                  [-1, 1, 1],
+                  [1, 1, 1],
+                  [1, 1, -1],
+                ],
+              ],
+              [
+                [0, -1, 0],
+                [
+                  [-1, -1, -1],
+                  [1, -1, -1],
+                  [1, -1, 1],
+                  [-1, -1, 1],
+                ],
+              ],
+              [
+                [0, 0, 1],
+                [
+                  [-1, -1, 1],
+                  [1, -1, 1],
+                  [1, 1, 1],
+                  [-1, 1, 1],
+                ],
+              ],
+              [
+                [0, 0, -1],
+                [
+                  [-1, -1, -1],
+                  [-1, 1, -1],
+                  [1, 1, -1],
+                  [1, -1, -1],
+                ],
+              ],
+            ];
+            for (const [nrm, vs] of F) {
+              const n = R(nrm);
+              if (n[2] > 0) continue;
+              const l = Math.max(0, -n[2] * 0.6 + n[1] * -0.3 + n[0] * 0.3);
+              const g = dark
+                ? Math.round(8 + 40 * l)
+                : Math.round(150 + 105 * l);
+              x.fillStyle = `rgb(${g},${g},${g})`;
+              x.beginPath();
+              vs.forEach((v, k) => {
+                const p = R(v),
+                  pz = 1 / (1 + p[2] * 0.08);
+                const X = px + p[0] * sz * pz,
+                  Y = py + p[1] * sz * pz;
+                k ? x.lineTo(X, Y) : x.moveTo(X, Y);
+              });
+              x.closePath();
+              x.fill();
+            }
+          }
+        },
+        code(x, t) {
+          x.fillStyle = "#fff";
+          x.fillRect(0, 0, CW, CH);
+          x.fillStyle = "#000";
+          x.font = "7px monospace";
+          const cw = 4.3,
+            ch = 7.2,
+            cols = Math.ceil(CW / cw),
+            rows = Math.ceil(CH / ch),
+            L = fs.replace(/\s+/g, " "),
+            o = Math.floor(t * 30);
+          for (let r = 0; r < rows; r++) {
+            let s = "";
+            for (let c = 0; c < cols; c++) {
+              const n = fbm(
+                  c * 0.035 + t * 0.05,
+                  r * 0.022 - t * 0.07,
+                  t * 0.12,
+                ),
+                e = n + 0.12 * Math.sin(c * 0.07 + r * 0.03 + t);
+              s += e > 0.5 && e < 0.66 ? " " : L[(r * cols + c + o) % L.length];
+            }
+            x.fillText(s, 0, 8 + r * ch);
+          }
+        },
+        moire(x, t) {
+          x.fillStyle = "#fff";
+          x.fillRect(0, 0, CW, CH);
+          const c1 = [
+              CW * 0.5 + 90 * Math.sin(t * 0.37),
+              CH * 0.4 + 200 * Math.sin(t * 0.23),
+            ],
+            c2 = [
+              CW * 0.5 + 90 * Math.cos(t * 0.29),
+              CH * 0.6 + 200 * Math.cos(t * 0.31),
+            ];
+          x.lineWidth = 5;
+          x.strokeStyle = "#000";
+          for (let r = 4; r < 1150; r += 11) {
+            x.beginPath();
+            x.arc(c1[0], c1[1], r, 0, 7);
+            x.stroke();
+          }
+          x.globalCompositeOperation = "difference";
+          x.strokeStyle = "#fff";
+          for (let r = 4; r < 1150; r += 11) {
+            x.beginPath();
+            x.arc(c2[0], c2[1], r + ((t * 8) % 11), 0, 7);
+            x.stroke();
+          }
+          x.globalCompositeOperation = "source-over";
+        },
+      };
+      const anims = {};
+      for (const k in ANIM) {
+        const c = document.createElement("canvas");
+        c.width = CW;
+        c.height = CH;
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        anims[k] = { c, x: c.getContext("2d"), tex };
+      }
+
+      const OPTS = [
+        ["a:poster", "Template poster"],
+        ["a:tunnel", "Animation: Tunnel"],
+        ["a:cube", "Animation: Cubes & grid"],
+        ["a:code", "Animation: Code text"],
+        ["a:moire", "Animation: Moiré"],
+      ];
+      const sel = {};
+      const media = [null, null, null, null];
+      function updateScale(i) {
+        const m = media[i];
+        if (!m) return;
+        const as = 1 / 3,
+          at = m.w / m.h,
+          cover = !document.getElementById("fit").checked;
+        let sx = 1,
+          sy = 1;
+        if (cover) {
+          if (at > as) sx = as / at;
+          else sy = at / as;
+        } else {
+          if (at > as) sy = at / as;
+          else sx = as / at;
+        }
+        U.sc.value[i].set(sx, sy);
+      }
+      function setTex(i, tex, w, h) {
+        U["tx" + i].value = tex;
+        media[i] = { w, h };
+        updateScale(i);
+      }
+      function apply(i) {
+        const v = sel[i].value;
+        if (v.startsWith("a:")) setTex(i, anims[v.slice(2)].tex, CW, CH);
+      }
+      const DEF = ["a:poster", "a:poster", "a:poster", "a:poster"];
+      document.querySelectorAll(".scr").forEach((d) => {
+        const s = d.querySelector("select"),
+          key = d.dataset.s;
+        if (key === "all") s.append(new Option("— choose —", ""));
+        OPTS.forEach(([v, l]) => s.append(new Option(l, v)));
+        if (key === "all") {
+          s.onchange = () => {
+            if (!s.value) return;
+            [0, 1, 2, 3].forEach((i) => {
+              sel[i].value = s.value;
+              apply(i);
+            });
+            s.value = "";
+          };
+        } else {
+          const i = +key;
+          sel[i] = s;
+          s.value = DEF[i];
+          s.onchange = () => apply(i);
+        }
+      });
+      [0, 1, 2, 3].forEach(apply);
+      document.getElementById("fit").onchange = () =>
+        [0, 1, 2, 3].forEach(updateScale);
+
+      const views = {
+        person: [
+          [0.02, 1.62, 0.02],
+          [-1, 1.5, -1],
+        ],
+        up: [
+          [0.02, 1.6, 0.02],
+          [-0.2, 2.9, -0.1],
+        ],
+        entrance: [
+          [0, 1.6, 4.2],
+          [0, 1.5, 0],
+        ],
+        outside: [
+          [7, 6, 8],
+          [0, 1.2, 0],
+        ],
+        plan: [
+          [0, 12, 0.01],
+          [0, 0, 0],
+        ],
+      };
+      let anim = null;
+      document.querySelectorAll("[data-v]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            const [p, tg] = views[b.dataset.v];
+            anim = {
+              p0: cam.position.clone(),
+              t0: ctl.target.clone(),
+              p: new THREE.Vector3(...p),
+              t: new THREE.Vector3(...tg),
+              s: performance.now(),
+            };
+          }),
+      );
+      cam.position.set(...views.person[0]);
+      ctl.target.set(...views.person[1]);
+      const bind = (id, fn) => {
+        const e = document.getElementById(id);
+        e.addEventListener("input", () => fn(e));
+      };
+      bind("nb", (e) => {
+        U.nb.value = +e.value;
+        document.getElementById("nbo").textContent = e.value;
+      });
+      bind("rf", (e) => {
+        U.rf.value = e.value / 100;
+        document.getElementById("rfo").textContent = e.value + " %";
+      });
+      let speed = 1;
+      bind("sp", (e) => {
+        speed = e.value / 100;
+        document.getElementById("spo").textContent = e.value + " %";
+      });
+      document.getElementById("fc").onchange = (e) =>
+        (U.fc.value = e.target.checked ? 1 : 0);
+      document.getElementById("gs").onchange = (e) =>
+        (U.gs.value = e.target.checked ? 1 : 0);
+      document.getElementById("shot").onclick = () => {
+        const a = document.createElement("a");
+        a.download = "infinity-room.png";
+        a.href = renderer.domElement.toDataURL("image/png");
+        a.click();
+      };
+      function resize() {
+        const w = view.clientWidth,
+          h = view.clientHeight;
+        renderer.setSize(w, h);
+        cam.aspect = w / h;
+        cam.updateProjectionMatrix();
+      }
+      new ResizeObserver(resize).observe(view);
+      resize();
+      const HEAD = new THREE.Vector3(0, 1.62, 0);
+      let T = 0,
+        last = performance.now(),
+        fr = 0;
+      window.__setT = (v) => {
+        T = v;
+      };
+      (function loop(now) {
+        requestAnimationFrame(loop);
+        now = now || performance.now();
+        T += Math.min(0.1, (now - last) / 1000) * speed;
+        last = now;
+        fr++;
+        const used = new Set(
+          [0, 1, 2, 3]
+            .map((i) => sel[i].value)
+            .filter((v) => v.startsWith("a:"))
+            .map((v) => v.slice(2)),
+        );
+        for (const k of used) {
+          if (k === "code" && fr % 2) continue;
+          ANIM[k](anims[k].x, T);
+          anims[k].tex.needsUpdate = true;
+        }
+        if (anim) {
+          const u = Math.min(1, (performance.now() - anim.s) / 900),
+            e = u * u * (3 - 2 * u);
+          cam.position.lerpVectors(anim.p0, anim.p, e);
+          ctl.target.lerpVectors(anim.t0, anim.t, e);
+          if (u >= 1) anim = null;
+        }
+        ctl.update();
+        cam.updateMatrixWorld();
+        U.cp.value.copy(cam.position);
+        U.eye.value = cam.position.distanceTo(HEAD) < 0.3 ? 1 : 0;
+        U.ivp.value.multiplyMatrices(
+          cam.matrixWorld,
+          cam.projectionMatrixInverse,
+        );
+        renderer.render(scene, oc);
+      })();
+    </script>
+  </body>
+</html>
