@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OSC poster demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@2.4.0/lib/p5.min.js"></script>
+  <script src="/p5.posterControl.js"></script>
+  <script src="/sketch.js"></script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+  <button id="fullscreen-button" type="button" aria-pressed="false">Enter fullscreen</button>
+  <p id="fullscreen-error" role="status"></p>
+  <script>
+    const fullscreenButton = document.getElementById('fullscreen-button');
+    const fullscreenError = document.getElementById('fullscreen-error');
+
+    fullscreenButton.addEventListener('click', async () => {
+      fullscreenError.textContent = '';
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (error) {
+        fullscreenError.textContent = 'Could not change fullscreen mode.';
+        console.error('Could not change fullscreen mode.', error);
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      const isFullscreen = Boolean(document.fullscreenElement);
+      fullscreenButton.textContent = isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
+      fullscreenButton.setAttribute('aria-pressed', String(isFullscreen));
+    });
+  </script>
+</body>
+
+</html>

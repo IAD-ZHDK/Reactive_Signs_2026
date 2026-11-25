@@ -10,11 +10,12 @@ html, body {
   background-color: black;
 }
 
-/* Single poster, centered, portrait 1:3, fills the available height. */
+/* Single poster, centered and fitted to the available space. */
 .posterFrame {
-  aspect-ratio: 1 / 3;
-  height: 100%;
-  width: auto;
+  aspect-ratio: var(--poster-aspect);
+  width: min(var(--poster-width), 100vw, calc(100vh * var(--poster-aspect)));
+  height: auto;
+  max-height: var(--poster-height);
   margin: 0;
   padding: 0;
   border-width: 0;
@@ -30,7 +31,8 @@ html, body {
   gap: 6px;
   font: 12px/1 -apple-system, system-ui, sans-serif;
 }
-.viewSwitch a {
+.viewSwitch a,
+.fullscreenButton {
   padding: 7px 11px;
   border-radius: 7px;
   text-decoration: none;
@@ -40,7 +42,8 @@ html, body {
   border: 1px solid rgba(255, 255, 255, 0.35);
   backdrop-filter: blur(2px);
 }
-.viewSwitch a:hover {
+.viewSwitch a:hover,
+.fullscreenButton:hover {
   background: rgba(0, 0, 0, 0.8);
   border-color: rgba(255, 255, 255, 0.7);
 }
@@ -49,4 +52,14 @@ html, body {
   color: #111;
   border-color: #fff;
   cursor: default;
+}
+
+.fullscreenButton {
+  position: fixed;
+  top: 14px;
+  left: 16px;
+  z-index: 100;
+  font: 12px/1 -apple-system, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  cursor: pointer;
 }

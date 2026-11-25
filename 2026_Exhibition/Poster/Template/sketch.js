@@ -27,8 +27,15 @@ let prevPosY = 0;
 let smoothedZoom = 1; // for Y_MODE "zoom"
 let smoothedShiftY = 0; // for Y_MODE "pan"
 
+function posterCanvasSize() {
+  const { width, height } = window.posterDimensions;
+  const scale = Math.min(1, windowWidth / width, windowHeight / height);
+  return [Math.max(1, Math.floor(width * scale)), Math.max(1, Math.floor(height * scale))];
+}
+
 function setup() {
-  createCanvas(windowWidth, windowHeight); // fills the 1:3 poster frame
+  createCanvas(...posterCanvasSize());
+  poster.setup({ resize: false });
   noStroke();
 
   tunnelFillLayer = createGraphics(width, height);
@@ -41,7 +48,7 @@ function setup() {
 }
 
 function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
+  resizeCanvas(...posterCanvasSize());
   tunnelFillLayer = createGraphics(width, height);
   tunnelStrokeLayer = createGraphics(width, height);
   maskLayer = createGraphics(width, height);

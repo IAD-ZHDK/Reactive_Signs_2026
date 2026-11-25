@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Infinity Room — poster preview</title>
+    <script src="../poster-dimensions.js"></script>
     <style>
       * {
         box-sizing: border-box;
@@ -165,7 +166,7 @@
       </div>
       <p class="small">
         Each screen shows the Template poster or one of the animations. Screen
-        format 1 : 3, e.g. 1080 × 3240 px.
+        size: <span id="screen-dimensions"></span>.
       </p>
       <label class="row"
         ><input type="checkbox" id="fit" checked />Show posters whole instead of
@@ -225,6 +226,8 @@
     <script type="module">
       import * as THREE from "three";
       import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      const { width: CW, height: CH } = window.posterDimensions;
+      document.getElementById("screen-dimensions").textContent = `${CW} × ${CH} px`;
       const view = document.getElementById("view");
       const renderer = new THREE.WebGLRenderer({
         antialias: false,
@@ -245,6 +248,7 @@
         rf: { value: 0.9 },
         gs: { value: 1 },
         eye: { value: 0 },
+        posterAspect: { value: CW / CH },
         tx0: { value: blank },
         tx1: { value: blank },
         tx2: { value: blank },
@@ -261,12 +265,13 @@
       const fs = `
 precision highp float;
 uniform vec3 cp;uniform mat4 ivp;uniform float nb,fc,rf,gs,eye;
+uniform float posterAspect;
 uniform sampler2D tx0,tx1,tx2,tx3;uniform vec2 sc[4];
 varying vec2 vUv;
 const float S=2.5,HH=3.0,G=0.5,D=1.75;
 vec3 scr(int i,vec2 uv){
  vec2 s=sc[0];if(i==1)s=sc[1];if(i==2)s=sc[2];if(i==3)s=sc[3];
- vec2 q=vec2(uv.x+0.5,uv.y/3.);q=0.5+(q-0.5)*s;
+ vec2 q=vec2(uv.x/(HH*posterAspect)+0.5,uv.y/HH);q=0.5+(q-0.5)*s;
  if(q.x<0.||q.x>1.||q.y<0.||q.y>1.)return vec3(0.);
  vec4 c=i==0?texture2D(tx0,q):i==1?texture2D(tx1,q):i==2?texture2D(tx2,q):texture2D(tx3,q);
  return c.rgb;
@@ -306,7 +311,7 @@ void main(){
    float rda=ax?rd.x:rd.z,roa=ax?ro.x:ro.z;
    if(abs(rda)>1e-6){float tt=(sg*D-roa)/rda;
     if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;float o=ax?p.z:p.x;
-     if(abs(o)<0.5&&p.y>=0.&&p.y<=HH){tm=tt;id=(sg*roa<D)?4:5;
+     if(abs(o)<HH*posterAspect*0.5&&p.y>=0.&&p.y<=HH){tm=tt;id=(sg*roa<D)?4:5;
       float lat=ax?(sg*o):(-sg*o);suv=vec2(lat,p.y);si=k;}}}
   }
   vec3 pa=vec3(0.,0.2,0.),pb=vec3(0.,1.25,0.);
@@ -384,9 +389,6 @@ void main(){
         0.55 * vn(x, y, z) +
         0.3 * vn(2 * x + 5, 2 * y, z * 1.3) +
         0.15 * vn(4 * x, 4 * y + 3, z * 1.7);
-
-      const CW = 360,
-        CH = 1080;
 
       // ---- the example poster (Template tunnel), ported to a 2D canvas ----
       // Layer canvases for the mask compositing, created once.
@@ -822,7 +824,7 @@ void main(){
       function updateScale(i) {
         const m = media[i];
         if (!m) return;
-        const as = 1 / 3,
+        const as = CW / CH,
           at = m.w / m.h,
           cover = !document.getElementById("fit").checked;
         let sx = 1,

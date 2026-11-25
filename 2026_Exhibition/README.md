@@ -32,10 +32,15 @@ http://localhost:8000/InfinityRoom/
 You can switch each screen to one of the procedural animations, change camera
 views, toggle the mirror and the black-and-white mode, and export a PNG.
 
+The poster and both previews share the dimensions in `poster-dimensions.js`
+(currently 480 × 1200 pixels). Edit that file to change the screen size; the
+poster and tracking preview scale down to fit smaller windows.
+
 ## Structure
 
 - `index.html` — the exhibition shell (one full-screen poster).
 - `styles.css` — layout and sizing for the shell.
+- `poster-dimensions.js` — shared poster width and height in pixels.
 - `Poster/Template/` — the starting point students write their poster in.
 - `Poster/libraries/` — `p5.min.js` and `p5.posterControl.js`.
 - `InfinityRoom/index.html` — 3D mirrored-room preview of the exhibition space.

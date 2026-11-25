@@ -19,7 +19,8 @@ setup.bat
 **macOS/Linux:**
 ```bash
 python run_detector_gui.py
-# or
+# or 
+chmod +x start_gui.sh
 ./start_gui.sh
 ```
 
