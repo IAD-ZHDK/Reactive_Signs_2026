@@ -6,7 +6,7 @@ const vm = require("node:vm");
 
 const root = path.join(__dirname, "..");
 const config = fs.readFileSync(path.join(root, "poster-dimensions.js"), "utf8");
-const sketch = fs.readFileSync(path.join(root, "Poster/Template/sketch.js"), "utf8");
+const sketch = fs.readFileSync(path.join(root, "Teams/Example/sketch.js"), "utf8");
 
 function createSketch(viewportWidth, viewportHeight) {
   const properties = {};
