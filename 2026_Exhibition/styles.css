@@ -54,6 +54,29 @@ html, body {
   cursor: default;
 }
 
+/* Presentation-mode poster label (fades out after a switch). */
+.posterLabel {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 8px 14px;
+  border-radius: 7px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(2px);
+  font: 13px/1 -apple-system, system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.posterLabel.visible {
+  opacity: 1;
+}
+
 .fullscreenButton {
   position: fixed;
   top: 14px;

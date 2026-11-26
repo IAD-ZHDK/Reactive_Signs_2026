@@ -5,15 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reactive Signs 2026 — Exhibition</title>
     <script src="poster-dimensions.js"></script>
+    <script src="teams.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
 
   <body>
     <!-- Single poster preview. Controlled by the mouse, and automatically by
        pose tracking (OSC) when cameraPoseOSC is running. -->
-    <iframe id="poster" class="posterFrame" src="Poster/Template/index.html">
+    <iframe id="poster" class="posterFrame" src="Teams/Example/index.html">
       Your browser doesn't support iframes
     </iframe>
+
+    <!-- Presentation-mode label: current poster name and position. -->
+    <div id="posterLabel" class="posterLabel" aria-live="polite"></div>
 
     <button id="fullscreenButton" class="fullscreenButton" type="button">
       Fullscreen
@@ -65,6 +69,16 @@
         updateFullscreenButton,
       );
       updateFullscreenButton();
+    </script>
+
+    <!-- Presentation mode: switch between team posters by keyboard. -->
+    <script src="poster-switcher.js"></script>
+    <script>
+      initPosterSwitcher({
+        frame: "poster",
+        label: "posterLabel",
+        basePath: "Teams/",
+      });
     </script>
   </body>
 </html>
