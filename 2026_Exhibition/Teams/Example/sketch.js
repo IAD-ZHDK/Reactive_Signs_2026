@@ -24,35 +24,25 @@ let prevPosY = 0;
 let smoothedZoom = 1; // for Y_MODE "zoom"
 let smoothedShiftY = 0; // for Y_MODE "pan"
 
-function posterCanvasSize() {
-  const { width, height } = window.posterDimensions;
-  const scale = Math.min(1, windowWidth / width, windowHeight / height);
-  return [
-    Math.max(1, Math.floor(width * scale)),
-    Math.max(1, Math.floor(height * scale)),
-  ];
-}
-
 function setup() {
-  createCanvas(...posterCanvasSize());
-  poster.setup({ resize: false });
+  createPosterCanvas();
   noStroke();
-
-  tunnelFillLayer = createGraphics(width, height);
-  tunnelStrokeLayer = createGraphics(width, height);
-  maskLayer = createGraphics(width, height);
-  finalLayer = createGraphics(width, height);
+  makeLayers();
 
   prevPosX = poster.position.x;
   prevPosY = poster.position.y;
 }
 
-function windowResized() {
-  resizeCanvas(...posterCanvasSize());
+function makeLayers() {
   tunnelFillLayer = createGraphics(width, height);
   tunnelStrokeLayer = createGraphics(width, height);
   maskLayer = createGraphics(width, height);
   finalLayer = createGraphics(width, height);
+}
+
+function windowResized() {
+  resizeCanvas(...posterCanvasSize());
+  makeLayers();
 }
 
 function easeInOut(x) {
