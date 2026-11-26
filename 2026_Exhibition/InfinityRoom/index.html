@@ -137,7 +137,12 @@
   </head>
   <body>
     <div id="side">
-      <h1>Infinity room 5 × 5 × 3 m</h1>
+      <h1>Infinity room 3 × 3 m</h1>
+      <p class="small">
+        Interior 300 × 300 cm, four screens 100 × 250 cm almost flush with the
+        mirror walls (2 cm gap), two openings over one corner. Mirror floor; the
+        ceiling mirror hangs 40 cm above the walls.
+      </p>
       <h2>View</h2>
       <button data-v="person">Person's view</button
       ><button data-v="up">Looking up</button
@@ -150,23 +155,23 @@
         <select></select>
       </div>
       <div class="scr" data-s="0">
-        <div class="lbl">Screen North <span>opposite entrance</span></div>
+        <div class="lbl">Screen North</div>
         <select></select>
       </div>
       <div class="scr" data-s="1">
-        <div class="lbl">Screen South <span>at entrance</span></div>
+        <div class="lbl">Screen South</div>
         <select></select>
       </div>
       <div class="scr" data-s="2">
-        <div class="lbl">Screen West <span>left</span></div>
+        <div class="lbl">Screen West</div>
         <select></select>
       </div>
       <div class="scr" data-s="3">
-        <div class="lbl">Screen East <span>right</span></div>
+        <div class="lbl">Screen East</div>
         <select></select>
       </div>
       <p class="small">
-        Each screen shows the Template poster or one of the animations. Screen
+        Each screen shows one of the team posters, running live. Screen
         size: <span id="screen-dimensions"></span>.
       </p>
       <label class="row"
@@ -249,7 +254,52 @@
         rf: { value: 0.9 },
         gs: { value: 1 },
         eye: { value: 0 },
-        posterAspect: { value: CW / CH },
+        // Room geometry as uniform arrays: walls, screens, ceiling mirror, floor.
+        wA: {
+          value: [
+            new THREE.Vector4(1, -1.5, -0.5, 1.55),
+            new THREE.Vector4(1, 1.5, -1.55, 0.5),
+            new THREE.Vector4(0, 1.5, -1.55, 1.55),
+            new THREE.Vector4(0, -1.5, -1.55, 1.55),
+            new THREE.Vector4(0, 99, 0, 0),
+            new THREE.Vector4(0, 99, 0, 0),
+            new THREE.Vector4(0, 99, 0, 0),
+            new THREE.Vector4(0, 99, 0, 0),
+          ],
+        },
+        wB: {
+          value: [
+            new THREE.Vector2(2.5, 1),
+            new THREE.Vector2(2.5, -1),
+            new THREE.Vector2(2.5, -1),
+            new THREE.Vector2(2.5, 1),
+            new THREE.Vector2(0, 1),
+            new THREE.Vector2(0, 1),
+            new THREE.Vector2(0, 1),
+            new THREE.Vector2(0, 1),
+          ],
+        },
+        nw: { value: 4 },
+        sA: {
+          value: [
+            new THREE.Vector4(1, -1.38, -0.5, 0.5),
+            new THREE.Vector4(1, 1.38, -0.5, 0.5),
+            new THREE.Vector4(0, -1.38, -0.5, 0.5),
+            new THREE.Vector4(0, 1.38, -0.5, 0.5),
+          ],
+        },
+        sB: {
+          value: [
+            new THREE.Vector4(1, 0.0, -1.38, -1.48),
+            new THREE.Vector4(-1, 0.0, 1.38, 1.48),
+            new THREE.Vector4(1, -1.38, 0.0, -1.48),
+            new THREE.Vector4(-1, 1.38, 0.0, 1.48),
+          ],
+        },
+        ns: { value: 4 },
+        mA: { value: new THREE.Vector4(-1.55, 1.55, -1.55, 1.55) },
+        mY: { value: 2.9 },
+        fp: { value: new THREE.Vector4(-1.5, 1.5, -1.5, 1.5) },
         tx0: { value: blank },
         tx1: { value: blank },
         tx2: { value: blank },
@@ -266,13 +316,15 @@
       const fs = `
 precision highp float;
 uniform vec3 cp;uniform mat4 ivp;uniform float nb,fc,rf,gs,eye;
-uniform float posterAspect;
 uniform sampler2D tx0,tx1,tx2,tx3;uniform vec2 sc[4];
+uniform vec4 wA[8];uniform vec2 wB[8];uniform float nw;
+uniform vec4 sA[4];uniform vec4 sB[4];uniform float ns;
+uniform vec4 mA;uniform float mY;uniform vec4 fp;
 varying vec2 vUv;
-const float S=2.5,HH=3.0,G=0.5,D=1.75;
+const float SH=2.5;
 vec3 scr(int i,vec2 uv){
  vec2 s=sc[0];if(i==1)s=sc[1];if(i==2)s=sc[2];if(i==3)s=sc[3];
- vec2 q=vec2(uv.x/(HH*posterAspect)+0.5,uv.y/HH);q=0.5+(q-0.5)*s;
+ vec2 q=vec2(uv.x+0.5,uv.y/SH);q=0.5+(q-0.5)*s;
  if(q.x<0.||q.x>1.||q.y<0.||q.y>1.)return vec3(0.);
  vec4 c=i==0?texture2D(tx0,q):i==1?texture2D(tx1,q):i==2?texture2D(tx2,q):texture2D(tx3,q);
  return c.rgb;
@@ -290,49 +342,58 @@ float capI(vec3 ro,vec3 rd,vec3 pa,vec3 pb,float r){
 }
 vec3 capN(vec3 p,vec3 a,vec3 b,float r){vec3 ba=b-a,pa=p-a;float h=clamp(dot(pa,ba)/dot(ba,ba),0.,1.);return (pa-h*ba)/r;}
 float sphI(vec3 ro,vec3 rd,vec3 c,float r){vec3 oc=ro-c;float b=dot(oc,rd);float h=b*b-dot(oc,oc)+r*r;if(h<0.)return -1.;return -b-sqrt(h);}
+
 void main(){
  vec4 w=ivp*vec4(vUv*2.-1.,1.,1.);
  vec3 ro=cp,rd=normalize(w.xyz/w.w-cp);
- vec3 col=vec3(0.),thr=vec3(1.);
+ vec3 col=vec3(0.),cout=vec3(0.),thr=vec3(1.);
  vec3 tint=vec3(0.97,1.,0.99)*rf;
  for(int b=0;b<81;b++){
   if(float(b)>nb){col+=thr*0.015;break;}
   float tm=1e9;int id=0;vec3 n=vec3(0.);vec2 suv=vec2(0.);int si=0;
-  for(int k=0;k<4;k++){
-   float sg=(k<2)?1.:-1.;bool ax=(k==0||k==2);
+  for(int i=0;i<8;i++){
+   if(float(i)>=nw)break;
+   vec4 A=wA[i];vec2 B=wB[i];bool ax=A.x<0.5;
    float rda=ax?rd.x:rd.z,roa=ax?ro.x:ro.z;
-   if(abs(rda)>1e-6){float tt=(sg*S-roa)/rda;
+   if(abs(rda)>1e-6){float tt=(A.y-roa)/rda;
     if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;float o=ax?p.z:p.x;
-     if(abs(o)<=S&&p.y>=0.&&p.y<=HH&&abs(o)>G){tm=tt;id=(sg*roa<S)?1:2;n=ax?vec3(1.,0.,0.):vec3(0.,0.,1.);}}}
+     if(o>=A.z&&o<=A.w&&p.y>=0.&&p.y<=B.x){tm=tt;id=(B.y*(roa-A.y)>0.)?1:2;n=ax?vec3(1.,0.,0.):vec3(0.,0.,1.);}}}
   }
-  if(rd.y<0.){float tt=-ro.y/rd.y;if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;tm=tt;n=vec3(0.,1.,0.);id=(abs(p.x)<S&&abs(p.z)<S)?(fc>0.5?1:7):3;}}
-  if(rd.y>0.&&ro.y<HH){float tt=(HH-ro.y)/rd.y;if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;if(abs(p.x)<S&&abs(p.z)<S){tm=tt;n=vec3(0.,1.,0.);id=fc>0.5?1:8;}}}
-  for(int k=0;k<4;k++){
-   bool ax=(k>=2);float sg=(k==0||k==2)?-1.:1.;
+  for(int i=0;i<4;i++){
+   if(float(i)>=ns)break;
+   vec4 A=sA[i];vec4 B=sB[i];bool ax=A.x<0.5;
    float rda=ax?rd.x:rd.z,roa=ax?ro.x:ro.z;
-   if(abs(rda)>1e-6){float tt=(sg*D-roa)/rda;
+   if(abs(rda)>1e-6){float tt=(A.y-roa)/rda;
     if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;float o=ax?p.z:p.x;
-     if(abs(o)<HH*posterAspect*0.5&&p.y>=0.&&p.y<=HH){tm=tt;id=(sg*roa<D)?4:5;
-      float lat=ax?(sg*o):(-sg*o);suv=vec2(lat,p.y);si=k;}}}
+     if(o>=A.z&&o<=A.w&&p.y>=0.&&p.y<=SH){tm=tt;id=(B.x*(roa-A.y)>0.)?4:5;
+      vec3 nr=ax?vec3(B.x,0.,0.):vec3(0.,0.,B.x);vec3 rt=vec3(nr.z,0.,-nr.x);
+      suv=vec2(dot(p-vec3(B.y,0.,B.z),rt),p.y);si=i;}}}
+   if(abs(B.w-A.y)>1e-4){
+    float lo=min(A.y,B.w),hi=max(A.y,B.w);
+    float rdo=ax?rd.z:rd.x,roo=ax?ro.z:ro.x;
+    for(int q=0;q<2;q++){float e=q==0?A.z:A.w;
+     if(abs(rdo)>1e-6){float tt=(e-roo)/rdo;if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;float d=ax?p.x:p.z;if(d>=lo&&d<=hi&&p.y>=0.&&p.y<=SH){tm=tt;id=5;}}}}
+   }
   }
-  vec3 pa=vec3(0.,0.2,0.),pb=vec3(0.,1.25,0.);
+  if(abs(rd.y)>1e-6){float tt=(mY-ro.y)/rd.y;if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;if(p.x>=mA.x&&p.x<=mA.y&&p.z>=mA.z&&p.z<=mA.w){tm=tt;n=vec3(0.,1.,0.);id=ro.y<mY?1:2;}}}
+  if(rd.y<0.){float tt=-ro.y/rd.y;if(tt>1e-4&&tt<tm){vec3 p=ro+rd*tt;tm=tt;n=vec3(0.,1.,0.);id=(p.x>=fp.x&&p.x<=fp.y&&p.z>=fp.z&&p.z<=fp.w)?(fc>0.5?1:7):3;}}
   bool skp=(b==0&&eye>0.5);
+  vec3 pa=vec3(0.,0.2,0.),pb=vec3(0.,1.25,0.);
   float tc=capI(ro,rd,pa,pb,0.2);if(!skp&&tc>1e-4&&tc<tm){tm=tc;id=6;n=capN(ro+rd*tc,pa,pb,0.2);}
   vec3 hc=vec3(0.,1.62,0.);float th=sphI(ro,rd,hc,0.12);if(!skp&&th>1e-4&&th<tm){tm=th;id=9;n=(ro+rd*th-hc)/0.12;}
   vec3 p=ro+rd*tm;
-  if(id==0){col+=thr*mix(vec3(0.75),vec3(0.86,0.88,0.92),clamp(rd.y*0.5+0.5,0.,1.));break;}
+  if(id==0||id==3){cout+=thr*vec3(0.5);break;}
   if(id==1){rd=reflect(rd,n);ro=p+rd*1e-3;thr*=tint;continue;}
-  if(id==2){col+=thr*vec3(0.92)*(0.7+0.3*abs(n.x));break;}
-  if(id==3){float ch=mod(floor(p.x)+floor(p.z),2.);col+=thr*vec3(0.5+0.04*ch);break;}
+  if(id==2){cout+=thr*vec3(0.92)*(0.7+0.3*abs(n.x));break;}
   if(id==4){col+=thr*scr(si,suv);break;}
   if(id==5){col+=thr*vec3(0.025);break;}
-  if(id==7){col+=thr*vec3(0.18);break;}
-  if(id==8){col+=thr*vec3(0.12);break;}
+  if(id==7){col+=thr*vec3(0.05);break;}
   vec3 base=id==9?vec3(0.8,0.62,0.5):vec3(0.55,0.25,0.15);
   float l=0.3+0.42*max(dot(n,normalize(vec3(0.4,0.8,0.3))),0.)+0.25*max(dot(n,normalize(-p*vec3(1.,0.,1.)+vec3(0.,0.2,0.))),0.);
   col+=thr*base*l;break;
  }
  if(gs>0.5)col=vec3(dot(col,vec3(0.299,0.587,0.114)));
+ col+=cout;
  gl_FragColor=vec4(pow(col,vec3(1./2.2)),1.);
 }`;
       const vs = `varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`;
@@ -391,7 +452,7 @@ void main(){
         0.3 * vn(2 * x + 5, 2 * y, z * 1.3) +
         0.15 * vn(4 * x, 4 * y + 3, z * 1.7);
 
-      // ---- the example poster (Template tunnel), ported to a 2D canvas ----
+      // ---- the example poster (Example tunnel), ported to a 2D canvas ----
       // Layer canvases for the mask compositing, created once.
       let PF, PS, PM, PC;
       function posterInit() {
@@ -813,13 +874,35 @@ void main(){
         anims[k] = { c, x: c.getContext("2d"), tex };
       }
 
-      const OPTS = [
-        ["a:poster", "Template poster"],
-        ["a:tunnel", "Animation: Tunnel"],
-        ["a:cube", "Animation: Cubes & grid"],
-        ["a:code", "Animation: Code text"],
-        ["a:moire", "Animation: Moiré"],
-      ];
+      // Team posters: each runs live in a hidden, offscreen iframe sized to the
+      // screen. Every frame its p5 canvas is copied onto a texture canvas.
+      const TEAMS =
+        Array.isArray(window.teams) && window.teams.length
+          ? window.teams
+          : [{ folder: "Example", label: "Example" }];
+      const live = {};
+      TEAMS.forEach(({ folder }) => {
+        const iframe = document.createElement("iframe");
+        iframe.src = "../Teams/" + folder + "/index.html";
+        iframe.width = CW;
+        iframe.height = CH;
+        Object.assign(iframe.style, {
+          position: "fixed",
+          left: "-10000px",
+          top: "0",
+          border: "0",
+        });
+        document.body.appendChild(iframe);
+        const c = document.createElement("canvas");
+        c.width = CW;
+        c.height = CH;
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        live[folder] = { iframe, c, x: c.getContext("2d"), tex };
+      });
+
+      const OPTS = TEAMS.map(({ folder, label }) => ["p:" + folder, label]);
       const sel = {};
       const media = [null, null, null, null];
       function updateScale(i) {
@@ -847,8 +930,10 @@ void main(){
       function apply(i) {
         const v = sel[i].value;
         if (v.startsWith("a:")) setTex(i, anims[v.slice(2)].tex, CW, CH);
+        else if (v.startsWith("p:")) setTex(i, live[v.slice(2)].tex, CW, CH);
       }
-      const DEF = ["a:poster", "a:poster", "a:poster", "a:poster"];
+      const d0 = OPTS[0][0];
+      const DEF = [d0, d0, d0, d0];
       document.querySelectorAll(".scr").forEach((d) => {
         const s = d.querySelector("select"),
           key = d.dataset.s;
@@ -877,22 +962,22 @@ void main(){
       const views = {
         person: [
           [0.02, 1.62, 0.02],
-          [-1, 1.5, -1],
+          [1, 1.5, -1],
         ],
         up: [
           [0.02, 1.6, 0.02],
           [-0.2, 2.9, -0.1],
         ],
         entrance: [
-          [0, 1.6, 4.2],
-          [0, 1.5, 0],
+          [-1.0, 1.6, -3.6],
+          [-0.6, 1.5, 0],
         ],
         outside: [
-          [7, 6, 8],
+          [5.5, 4.5, 6.5],
           [0, 1.2, 0],
         ],
         plan: [
-          [0, 12, 0.01],
+          [0, 10, 0.01],
           [0, 0, 0],
         ],
       };
@@ -961,16 +1046,26 @@ void main(){
         T += Math.min(0.1, (now - last) / 1000) * speed;
         last = now;
         fr++;
+        const vals = [0, 1, 2, 3].map((i) => sel[i].value);
         const used = new Set(
-          [0, 1, 2, 3]
-            .map((i) => sel[i].value)
-            .filter((v) => v.startsWith("a:"))
-            .map((v) => v.slice(2)),
+          vals.filter((v) => v.startsWith("a:")).map((v) => v.slice(2)),
         );
         for (const k of used) {
           if (k === "code" && fr % 2) continue;
           ANIM[k](anims[k].x, T);
           anims[k].tex.needsUpdate = true;
+        }
+        // Copy each live team poster's p5 canvas into its texture.
+        const usedPosters = new Set(
+          vals.filter((v) => v.startsWith("p:")).map((v) => v.slice(2)),
+        );
+        for (const folder of usedPosters) {
+          const lp = live[folder];
+          const src = lp.iframe.contentDocument?.querySelector("canvas");
+          if (!src || !src.width) continue;
+          lp.x.clearRect(0, 0, CW, CH);
+          lp.x.drawImage(src, 0, 0, CW, CH);
+          lp.tex.needsUpdate = true;
         }
         if (anim) {
           const u = Math.min(1, (performance.now() - anim.s) / 900),
