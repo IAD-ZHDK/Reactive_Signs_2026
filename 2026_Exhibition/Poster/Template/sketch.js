@@ -19,9 +19,6 @@ let idle = true;
 let smoothedShift = 0; // horizontal, from position.x
 let prevPosX = 0;
 
-// --- y mapping (depth: toward / away from the screen) ---
-// "zoom" = walking toward the screen zooms into the tunnel; "pan" = the
-// vanishing point slides up/down (mirrors x). Change this one word to switch.
 const Y_MODE = "zoom";
 let prevPosY = 0;
 let smoothedZoom = 1; // for Y_MODE "zoom"
@@ -30,7 +27,10 @@ let smoothedShiftY = 0; // for Y_MODE "pan"
 function posterCanvasSize() {
   const { width, height } = window.posterDimensions;
   const scale = Math.min(1, windowWidth / width, windowHeight / height);
-  return [Math.max(1, Math.floor(width * scale)), Math.max(1, Math.floor(height * scale))];
+  return [
+    Math.max(1, Math.floor(width * scale)),
+    Math.max(1, Math.floor(height * scale)),
+  ];
 }
 
 function setup() {
@@ -55,7 +55,7 @@ function windowResized() {
   finalLayer = createGraphics(width, height);
 }
 
-function smoothstep(x) {
+function easeInOut(x) {
   return x * x * (3 - 2 * x);
 }
 
@@ -121,8 +121,8 @@ function draw() {
 
   // Tunnel
   for (let d = 0; d < depth; d++) {
-    let td1 = smoothstep(d / depth);
-    let td2 = smoothstep((d + 1) / depth);
+    let td1 = easeInOut(d / depth);
+    let td2 = easeInOut((d + 1) / depth);
 
     let L1 = lerp(0, cx, td1);
     let R1 = lerp(width, cx, td1);
