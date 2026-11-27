@@ -16,6 +16,7 @@ Keys (window must be focused):
 Hidden: Shift+R (or --record) records the depth image to data/recordings.
 """
 import argparse
+import ctypes
 import asyncio
 import csv
 import math
@@ -24,6 +25,7 @@ import platform
 import struct
 import threading
 import time
+from ctypes import wintypes
 
 import cv2
 import numpy as np
@@ -161,6 +163,44 @@ class RealSense:
             self.pipe.stop()
         except Exception:
             pass
+
+
+# ---------------------------------------------------------------- window placement
+class MonitorRect(ctypes.Structure):
+    _fields_ = [
+        ("left", ctypes.c_long),
+        ("top", ctypes.c_long),
+        ("right", ctypes.c_long),
+        ("bottom", ctypes.c_long),
+    ]
+
+
+def monitor_rect(position):
+    if os.name != "nt":
+        return None
+
+    rects = []
+    callback_type = ctypes.WINFUNCTYPE(
+        ctypes.c_int,
+        wintypes.HMONITOR,
+        wintypes.HDC,
+        ctypes.POINTER(MonitorRect),
+        wintypes.LPARAM,
+    )
+
+    def collect_monitor(_monitor, _dc, rect, _data):
+        bounds = rect.contents
+        rects.append((bounds.left, bounds.top, bounds.right, bounds.bottom))
+        return True
+
+    callback = callback_type(collect_monitor)
+    if not ctypes.windll.user32.EnumDisplayMonitors(None, None, callback, 0):
+        raise RuntimeError("could not enumerate displays")
+
+    rects.sort(key=lambda rect: (rect[0], rect[1]))
+    if not rects:
+        return None
+    return rects[0] if position == "left" else rects[-1]
 
 
 # ---------------------------------------------------------------- app
@@ -438,9 +478,19 @@ class App:
         cv2.putText(canvas, label, (sx, sy - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.45,
                     (255, 255, 255) if on else (150, 150, 150), 1, cv2.LINE_AA)
 
-    def run(self):
+    def run(self, fullscreen=False, monitor=None):
         cv2.namedWindow(WINDOW, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(WINDOW, WIDTH, HEIGHT)
+        bounds = monitor_rect(monitor) if monitor else None
+        if bounds:
+            left, top, right, bottom = bounds
+            cv2.moveWindow(WINDOW, left, top)
+            cv2.resizeWindow(WINDOW, right - left, bottom - top)
+        else:
+            cv2.resizeWindow(WINDOW, WIDTH, HEIGHT)
+        if fullscreen:
+            cv2.setWindowProperty(
+                WINDOW, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN
+            )
         cv2.setMouseCallback(WINDOW, self.on_mouse)
         print("Sending data on: ws://localhost:%d/" % PORT)
         if self.recording:
@@ -496,4 +546,13 @@ class App:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--record", action="store_true", help=argparse.SUPPRESS)
-    App(record=ap.parse_args().record).run()
+    ap.add_argument(
+        "--fullscreen", action="store_true", help="open the tracker fullscreen"
+    )
+    ap.add_argument(
+        "--monitor",
+        choices=("left", "right"),
+        help="place the tracker on the leftmost or rightmost monitor",
+    )
+    args = ap.parse_args()
+    App(record=args.record).run(fullscreen=args.fullscreen, monitor=args.monitor)

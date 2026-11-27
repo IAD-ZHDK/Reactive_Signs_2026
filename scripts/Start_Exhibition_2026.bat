@@ -25,10 +25,26 @@ TASKKILL /F /IM chrome.exe >nul 2>&1
 TASKKILL /F /IM python.exe >nul 2>&1
 TASKKILL /F /IM node.exe >nul 2>&1
 
+set "MONITOR_COUNT=1"
+set "RIGHT_X=0"
+set "RIGHT_Y=0"
+set "RIGHT_WIDTH=1920"
+set "RIGHT_HEIGHT=1080"
+set "TRACKER_ARGS="
+for /f "tokens=1-5 delims=," %%A in ('powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $screens = @([System.Windows.Forms.Screen]::AllScreens | Sort-Object { $_.Bounds.X }, { $_.Bounds.Y }); $right = $screens[-1].Bounds; Write-Output ('{0},{1},{2},{3},{4}' -f $screens.Count, $right.X, $right.Y, $right.Width, $right.Height)"') do (
+  set "MONITOR_COUNT=%%A"
+  set "RIGHT_X=%%B"
+  set "RIGHT_Y=%%C"
+  set "RIGHT_WIDTH=%%D"
+  set "RIGHT_HEIGHT=%%E"
+)
+
+if %MONITOR_COUNT% GTR 1 set "TRACKER_ARGS=--fullscreen --monitor left"
+
 echo starting the RealSense tracker (realSenseTrackerOSC)
 REM run.bat creates the .venv and installs requirements on first run,
 REM then streams OSC on ws://localhost:8025/.
-start /min "" cmd /d /c "cd /d ""%REPO_ROOT%\realSenseTrackerOSC"" && call run.bat"
+start /min "" cmd /d /c "cd /d ""%REPO_ROOT%\realSenseTrackerOSC"" && call run.bat %TRACKER_ARGS%"
 echo tracker starting in background
 
 TIMEOUT /t 10
@@ -46,7 +62,10 @@ start /min "" cmd /d /c "cd /d ""%REPO_ROOT%\2026_Exhibition"" && npx http-serve
 TIMEOUT /t 5
 
 echo starting Chrome in kiosk mode
-start chrome --start-fullscreen http://localhost:%PORT% ^
+start "" chrome --start-fullscreen ^
+  --window-position=%RIGHT_X%,%RIGHT_Y% ^
+  --window-size=%RIGHT_WIDTH%,%RIGHT_HEIGHT% ^
+  "http://localhost:%PORT%/?presentation=1" ^
   --no-first-run ^
   --no-default-browser-check ^
   --no-pings ^

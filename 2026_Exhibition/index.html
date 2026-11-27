@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Reactive Signs 2026 — Exhibition</title>
+    <script>
+      if (
+        new URLSearchParams(window.location.search).get("presentation") === "1"
+      ) {
+        document.documentElement.classList.add("launch-presentation");
+      }
+    </script>
     <script src="poster-dimensions.js"></script>
     <script src="teams.js"></script>
     <link rel="stylesheet" href="styles.css" />
@@ -37,6 +44,9 @@
       const fullscreenButton = document.getElementById("fullscreenButton");
       const presentationButton = document.getElementById("presentationButton");
       const root = document.documentElement;
+      const launchPresentation = root.classList.contains(
+        "launch-presentation",
+      );
 
       function isFullscreen() {
         return Boolean(
@@ -112,7 +122,22 @@
         "webkitfullscreenchange",
         updateFullscreenButton,
       );
+
+      if (launchPresentation) {
+        document.body.classList.add("presentation-mode");
+      }
       updateFullscreenButton();
+
+      window.addEventListener("keydown", function (event) {
+        if (
+          launchPresentation &&
+          (event.key === "Escape" || event.key === "F11")
+        ) {
+          root.classList.remove("launch-presentation");
+          document.body.classList.remove("presentation-mode");
+          updateFullscreenButton();
+        }
+      });
     </script>
 
     <!-- Presentation mode: switch between team posters by keyboard. -->

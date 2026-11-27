@@ -10,10 +10,17 @@ html, body {
   background-color: black;
 }
 
-body.presentation-mode {
+body.presentation-mode,
+html.launch-presentation body {
   justify-content: flex-start;
 }
 
+body.presentation-mode .fullscreenButton,
+body.presentation-mode .presentationButton,
+body.presentation-mode .viewSwitch,
+html.launch-presentation .fullscreenButton,
+html.launch-presentation .presentationButton,
+html.launch-presentation .viewSwitch,
 html:fullscreen .fullscreenButton,
 html:fullscreen .presentationButton,
 html:fullscreen .viewSwitch,
