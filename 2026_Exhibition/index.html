@@ -22,6 +22,9 @@
     <button id="fullscreenButton" class="fullscreenButton" type="button">
       Fullscreen
     </button>
+    <button id="presentationButton" class="presentationButton" type="button">
+      Presentation mode
+    </button>
 
     <!-- Bottom-right view switcher. -->
     <nav class="viewSwitch">
@@ -32,6 +35,7 @@
 
     <script>
       const fullscreenButton = document.getElementById("fullscreenButton");
+      const presentationButton = document.getElementById("presentationButton");
       const root = document.documentElement;
 
       function isFullscreen() {
@@ -41,25 +45,65 @@
       }
 
       function updateFullscreenButton() {
-        fullscreenButton.textContent = isFullscreen()
+        const fullscreen = isFullscreen();
+        if (!fullscreen) {
+          document.body.classList.remove("presentation-mode");
+        }
+
+        fullscreenButton.textContent = fullscreen
           ? "Exit fullscreen"
           : "Fullscreen";
-        fullscreenButton.setAttribute("aria-pressed", String(isFullscreen()));
+        fullscreenButton.setAttribute("aria-pressed", String(fullscreen));
+
+        const presenting =
+          fullscreen && document.body.classList.contains("presentation-mode");
+        presentationButton.textContent = presenting
+          ? "Exit presentation"
+          : "Presentation mode";
+        presentationButton.setAttribute("aria-pressed", String(presenting));
+      }
+
+      async function enterFullscreen() {
+        const requestFullscreen =
+          root.requestFullscreen || root.webkitRequestFullscreen;
+        await requestFullscreen?.call(root);
+      }
+
+      async function exitFullscreen() {
+        const closeFullscreen =
+          document.exitFullscreen || document.webkitExitFullscreen;
+        await closeFullscreen?.call(document);
       }
 
       fullscreenButton.addEventListener("click", async function () {
         try {
           if (isFullscreen()) {
-            const exitFullscreen =
-              document.exitFullscreen || document.webkitExitFullscreen;
-            await exitFullscreen?.call(document);
+            await exitFullscreen();
           } else {
-            const requestFullscreen =
-              root.requestFullscreen || root.webkitRequestFullscreen;
-            await requestFullscreen?.call(root);
+            await enterFullscreen();
           }
         } catch (error) {
           console.error("Could not change fullscreen mode.", error);
+        }
+      });
+
+      presentationButton.addEventListener("click", async function () {
+        try {
+          const presenting =
+            document.body.classList.contains("presentation-mode");
+
+          if (presenting) {
+            document.body.classList.remove("presentation-mode");
+            if (isFullscreen()) await exitFullscreen();
+          } else {
+            document.body.classList.add("presentation-mode");
+            if (!isFullscreen()) await enterFullscreen();
+            updateFullscreenButton();
+          }
+        } catch (error) {
+          document.body.classList.remove("presentation-mode");
+          updateFullscreenButton();
+          console.error("Could not enter presentation mode.", error);
         }
       });
 

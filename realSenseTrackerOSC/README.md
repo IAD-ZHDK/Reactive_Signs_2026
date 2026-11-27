@@ -32,6 +32,8 @@ Red boxes show detected blobs (with ID), the blue dot is the averaged position, 
 | `q` / Esc | quit |
 
 Settings (distance range, crop) are saved to `data/lowHigh.csv`.
+Close the tracker before running `scripts/updateFromRemote.ps1`; the updater
+preserves this file while replacing other tracked changes.
 
 ## OSC message `/depth`
 

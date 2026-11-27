@@ -10,6 +10,19 @@ html, body {
   background-color: black;
 }
 
+body.presentation-mode {
+  justify-content: flex-start;
+}
+
+html:fullscreen .fullscreenButton,
+html:fullscreen .presentationButton,
+html:fullscreen .viewSwitch,
+html:-webkit-full-screen .fullscreenButton,
+html:-webkit-full-screen .presentationButton,
+html:-webkit-full-screen .viewSwitch {
+  display: none;
+}
+
 /* Single poster, centered and fitted to the available space. */
 .posterFrame {
   aspect-ratio: var(--poster-aspect);
@@ -32,7 +45,8 @@ html, body {
   font: 12px/1 -apple-system, system-ui, sans-serif;
 }
 .viewSwitch a,
-.fullscreenButton {
+.fullscreenButton,
+.presentationButton {
   padding: 7px 11px;
   border-radius: 7px;
   text-decoration: none;
@@ -43,7 +57,8 @@ html, body {
   backdrop-filter: blur(2px);
 }
 .viewSwitch a:hover,
-.fullscreenButton:hover {
+.fullscreenButton:hover,
+.presentationButton:hover {
   background: rgba(0, 0, 0, 0.8);
   border-color: rgba(255, 255, 255, 0.7);
 }
@@ -77,12 +92,20 @@ html, body {
   opacity: 1;
 }
 
-.fullscreenButton {
+.fullscreenButton,
+.presentationButton {
   position: fixed;
-  top: 14px;
   left: 16px;
   z-index: 100;
   font: 12px/1 -apple-system, system-ui, sans-serif;
   letter-spacing: 0.04em;
   cursor: pointer;
+}
+
+.fullscreenButton {
+  top: 14px;
+}
+
+.presentationButton {
+  top: 49px;
 }

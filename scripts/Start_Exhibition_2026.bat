@@ -6,8 +6,10 @@ REM (no hardcoded paths), starts the RealSense tracker, serves
 REM the exhibition, and opens Chrome full-screen.
 REM ============================================================
 
-REM Run from this script's own folder (the repo root).
-cd /d "%~dp0"
+REM Run from the repository root, one level above this script.
+set "SCRIPT_DIR=%~dp0"
+for %%I in ("%SCRIPT_DIR%..") do set "REPO_ROOT=%%~fI"
+cd /d "%REPO_ROOT%"
 
 set PORT=8000
 
@@ -26,7 +28,7 @@ TASKKILL /F /IM node.exe >nul 2>&1
 echo starting the RealSense tracker (realSenseTrackerOSC)
 REM run.bat creates the .venv and installs requirements on first run,
 REM then streams OSC on ws://localhost:8025/.
-start /min cmd /c "cd /d "%~dp0realSenseTrackerOSC" && run.bat"
+start /min "" cmd /d /c "cd /d ""%REPO_ROOT%\realSenseTrackerOSC"" && call run.bat"
 echo tracker starting in background
 
 TIMEOUT /t 10
@@ -39,7 +41,7 @@ CMD /C npx kill-port --port %PORT%
 TIMEOUT /t 2
 
 echo starting http-server in background on port %PORT%
-start /min cmd /c "cd /d "%~dp0\2026_Exhibition" && npx http-server -p %PORT% -c-1"
+start /min "" cmd /d /c "cd /d ""%REPO_ROOT%\2026_Exhibition"" && npx http-server -p %PORT% -c-1"
 
 TIMEOUT /t 5
 
